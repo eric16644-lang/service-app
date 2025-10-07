@@ -8,30 +8,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [checking, setChecking] = useState(true)
   const [authorized, setAuthorized] = useState(false)
 
+  function log(...args: any[]) { console.log('[ADMIN]', ...args) }
+
   useEffect(() => {
     let unsub: (() => void) | null = null
 
-    async function check() {
-      // 1) cek user sekarang
-      const { data: { user } } = await supabase.auth.getUser()
+    async function verify(userId: string) {
+      // profil harus bisa dibaca oleh user sendiri (cek RLS di bawah)
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single()
+      log('profile:', profile, error)
+      const ok = profile?.role === 'admin'
+      setAuthorized(ok)
+      setChecking(false)
+      if (!ok) router.replace('/login')
+    }
 
-      async function verify(uId: string) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', uId)
-          .single()
-        const ok = profile?.role === 'admin'
-        setAuthorized(ok)
-        setChecking(false)
-        if (!ok) router.replace('/login')
-      }
+    async function boot() {
+      const { data: { user } } = await supabase.auth.getUser()
+      log('getUser admin:', user)
 
       if (user) {
         await verify(user.id)
       } else {
-        // 2) tunggu event SIGNED_IN sebentar (kalau baru login)
         const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+          log('auth event:', event, !!session?.user)
           if (session?.user) verify(session.user.id)
           else if (event === 'SIGNED_OUT') {
             setChecking(false)
@@ -39,18 +43,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           }
         })
         unsub = () => sub.subscription.unsubscribe()
-        // beri timeout kalau memang tidak ada session
+
+        // timeout kalau memang tidak ada sesi
         setTimeout(async () => {
           const { data: { user: u2 } } = await supabase.auth.getUser()
+          log('timeout recheck:', u2)
           if (!u2) {
             setChecking(false)
             router.replace('/login')
           }
-        }, 800)
+        }, 900)
       }
     }
 
-    check()
+    boot()
     return () => { if (unsub) unsub() }
   }, [router])
 

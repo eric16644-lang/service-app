@@ -8,55 +8,76 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [userDump, setUserDump] = useState<string>('')
 
-  // If already signed-in, go to /admin
+  // Tulis helper log agar terlihat jelas di console
+  function log(...args: any[]) {
+    console.log('[LOGIN]', ...args)
+  }
+
+  // Jika sudah login, langsung ke /admin (sekalian log)
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser()
+      log('getUser on mount:', user)
       if (user) router.replace('/admin')
     })()
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      log('onAuthStateChange:', event, !!session?.user)
+      if (session?.user) {
+        router.replace('/admin')
+      }
+    })
+    return () => sub.subscription.unsubscribe()
   }, [router])
 
-  async function ensureSessionAndGo() {
-    // up to ~1s polling to ensure session is visible to the app
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setMsg(null)
+    setLoading(true)
+    console.clear()
+    log('Attempt login:', email)
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    log('signInWithPassword result:', { user: data.user, error })
+
+    if (error) {
+      setMsg('Email atau password salah')
+      setLoading(false)
+      return
+    }
+
+    // polling pendek untuk pastikan session kebaca
     for (let i = 0; i < 5; i++) {
       const { data: { user } } = await supabase.auth.getUser()
+      log(`poll ${i} getUser:`, user)
+      setUserDump(JSON.stringify(user, null, 2))
       if (user) {
         router.replace('/admin')
-        // hard fallback if router stuck:
-        setTimeout(() => { if (location.pathname === '/login') location.assign('/admin') }, 300)
+        // fallback keras jika router macet
+        setTimeout(() => {
+          if (location.pathname === '/login') location.assign('/admin')
+        }, 300)
+        setLoading(false)
         return
       }
       await new Promise(r => setTimeout(r, 200))
     }
-    // if still no user:
-    setError('Login berhasil namun sesi belum tersinkron. Coba ulangi atau refresh halaman.')
-  }
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setMsg('Login berhasil namun sesi belum tersinkron. Coba refresh halaman.')
     setLoading(false)
-
-    if (error) {
-      setError('Email atau password salah')
-      return
-    }
-    await ensureSessionAndGo()
   }
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-50">
+    <div className="flex justify-center items-center min-h-[100dvh] bg-gray-50">
       <div className="bg-white shadow-lg rounded-lg p-6 w-80">
         <h1 className="text-xl font-semibold mb-4 text-center">Login Admin</h1>
 
-        {error && (
-          <div className="mb-3 text-sm bg-rose-100 text-rose-700 border border-rose-300 px-3 py-2 rounded">
-            {error}
+        {msg && (
+          <div className="mb-3 text-sm bg-amber-100 text-amber-800 border border-amber-300 px-3 py-2 rounded">
+            {msg}
           </div>
         )}
 
@@ -90,9 +111,18 @@ export default function LoginPage() {
             disabled={loading}
             className={`w-full bg-blue-600 text-white py-2 rounded font-medium ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
-            {loading ? 'Masuk...' : 'Login'}
+            {loading ? 'Masuk…' : 'Login'}
           </button>
         </form>
+
+        {/* Panel debug kecil (hapus di produksi jika mau) */}
+        <details className="mt-4 text-xs opacity-80">
+          <summary>Debug</summary>
+          <div className="mt-2">
+            <div>URL: {process.env.NEXT_PUBLIC_SUPABASE_URL}</div>
+            <pre className="bg-gray-100 p-2 rounded mt-2 overflow-auto max-h-40">{userDump || '(empty)'}</pre>
+          </div>
+        </details>
       </div>
     </div>
   )

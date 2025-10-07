@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -10,27 +10,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // 🔄 Dengarkan perubahan status login
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        router.replace('/admin') // ✅ Langsung redirect begitu login terdeteksi
+      }
+    })
+    return () => listener.subscription.unsubscribe()
+  }, [router])
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
-    if (error) {
-      setError('Email atau password salah')
-      setLoading(false)
-      return
-    }
-
-    // ✅ Jika berhasil, arahkan ke dashboard admin
-    if (data.user) {
-  router.push('/admin')
-  setTimeout(() => location.reload(), 300) // ⬅️ tambahkan baris ini
-}
+    if (error) setError('Email atau password salah')
+    setLoading(false)
   }
 
   return (
@@ -79,10 +80,6 @@ export default function LoginPage() {
             {loading ? 'Masuk...' : 'Login'}
           </button>
         </form>
-
-        <p className="text-xs text-center mt-4 opacity-70">
-          © {new Date().getFullYear()} Service App
-        </p>
       </div>
     </div>
   )

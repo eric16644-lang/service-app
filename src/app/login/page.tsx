@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -10,28 +10,43 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔄 Dengarkan perubahan status login
+  // If already signed-in, go to /admin
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        router.replace('/admin') // ✅ Langsung redirect begitu login terdeteksi
-      }
-    })
-    return () => listener.subscription.unsubscribe()
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) router.replace('/admin')
+    })()
   }, [router])
+
+  async function ensureSessionAndGo() {
+    // up to ~1s polling to ensure session is visible to the app
+    for (let i = 0; i < 5; i++) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        router.replace('/admin')
+        // hard fallback if router stuck:
+        setTimeout(() => { if (location.pathname === '/login') location.assign('/admin') }, 300)
+        return
+      }
+      await new Promise(r => setTimeout(r, 200))
+    }
+    // if still no user:
+    setError('Login berhasil namun sesi belum tersinkron. Coba ulangi atau refresh halaman.')
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) setError('Email atau password salah')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
+
+    if (error) {
+      setError('Email atau password salah')
+      return
+    }
+    await ensureSessionAndGo()
   }
 
   return (
@@ -73,9 +88,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-blue-600 text-white py-2 rounded font-medium ${
-              loading ? 'opacity-60 cursor-not-allowed' : ''
-            }`}
+            className={`w-full bg-blue-600 text-white py-2 rounded font-medium ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
             {loading ? 'Masuk...' : 'Login'}
           </button>

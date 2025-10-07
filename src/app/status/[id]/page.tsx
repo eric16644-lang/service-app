@@ -87,6 +87,25 @@ export default function StatusPage({ params }: { params: { id: string } }) {
         <QRCode value={`${baseUrl}/status/${data.id}`} size={120} />
       </div>
 
+      // ...di dalam return(), mis. di bawah QRCode
+<div className="mt-4 flex gap-2 justify-center">
+  <a
+    href={`/status/${data.id}/nota`}
+    className="px-3 py-2 border rounded text-sm"
+    target="_blank"
+  >
+    Lihat Nota
+  </a>
+  <a
+    href={`/status/${data.id}/nota?auto=1`}
+    className="px-3 py-2 bg-black text-white rounded text-sm"
+    target="_blank"
+  >
+    Cetak Nota
+  </a>
+</div>
+
+
       {data.qris_url && (
         <div className="mt-3">
           <p className="text-center font-semibold">QRIS Pembayaran</p>

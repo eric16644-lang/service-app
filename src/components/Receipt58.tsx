@@ -47,9 +47,10 @@ export default function Receipt58({
     <div className="receipt-58">
       {/* Header */}
       <div className="center">
-        <div className="brand">SHINE SERVICE</div>
-        <div className="sub">Service HP & Elektronik</div>
-        <div className="sub">Telp/WA: 08xx-xxxx-xxxx</div>
+        <div className="brand">JP Cellular</div>
+        <div className="sub">Service & Jual Beli HP</div>
+        <div className="sub">Telp/WA: 0882001382312</div>
+        <div className="sub">Jln. Ahmad Yani Jajaran Depan Pasar Talaga Blok A No. 5</div>
       </div>
 
       <div className="divider" />
@@ -115,7 +116,6 @@ export default function Receipt58({
         <div className="qr-wrap">
           <QRCode value={statusUrl} size={120} />
         </div>
-        <div className="tiny">{statusUrl}</div>
       </div>
 
       {/* QRIS opsional */}

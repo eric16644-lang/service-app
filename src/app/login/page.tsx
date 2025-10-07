@@ -27,8 +27,10 @@ export default function LoginPage() {
     }
 
     // ✅ Jika berhasil, arahkan ke dashboard admin
-    if (data.user) router.push('/admin')
-    setLoading(false)
+    if (data.user) {
+  router.push('/admin')
+  setTimeout(() => location.reload(), 300) // ⬅️ tambahkan baris ini
+}
   }
 
   return (

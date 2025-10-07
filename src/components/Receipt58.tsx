@@ -13,13 +13,19 @@ type Props = {
   tanggal: string | Date
   orderId: string
   qris_url?: string | null
+  // ✅ kelengkapan
+  sim_card?: boolean
+  sd_card?: boolean
+  charger?: boolean
+  box?: boolean
+  phone_case?: boolean
 }
 
 export default function Receipt58({
   nomor_nota, nama, no_hp, perangkat, keluhan,
-  estimasi, status, tanggal, orderId, qris_url
+  estimasi, status, tanggal, orderId, qris_url,
+  sim_card, sd_card, charger, box, phone_case
 }: Props) {
-
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://service-app.vercel.app'
   const statusUrl = `${baseUrl}/status/${orderId}`
 
@@ -27,6 +33,15 @@ export default function Receipt58({
     typeof n === 'number'
       ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
       : '-'
+
+  // ✅ gabungkan hanya yang tercentang
+  const kelengkapan = [
+    sim_card ? 'SIM Card' : null,
+    sd_card ? 'SD Card' : null,
+    charger ? 'Charger' : null,
+    box ? 'Box' : null,
+    phone_case ? 'Case' : null,
+  ].filter(Boolean).join(' • ')
 
   return (
     <div className="receipt-58">
@@ -64,6 +79,16 @@ export default function Receipt58({
         <span>Perangkat</span>
         <span>{perangkat}</span>
       </div>
+
+      {/* ✅ Kelengkapan (hanya tampil bila ada yang tercentang) */}
+      {kelengkapan && (
+        <div className="row">
+          <span>Kelengkapan</span>
+          <span style={{ maxWidth: '32mm', textAlign: 'right', overflowWrap: 'anywhere' }}>
+            {kelengkapan}
+          </span>
+        </div>
+      )}
 
       <div className="block">
         <div className="label">Keluhan:</div>
@@ -155,8 +180,6 @@ export default function Receipt58({
           background: #111; color: #fff; border: 0; border-radius: 4px;
           padding: 6px 10px; font-weight: 700; cursor: pointer;
         }
-
-        /* Print rules */
         @media print {
           @page { size: 58mm auto; margin: 0; }
           :global(body) { background: #fff !important; }

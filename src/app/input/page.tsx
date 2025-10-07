@@ -10,6 +10,12 @@ type FormState = {
   perangkat: string
   keluhan: string
   estimasi: string // input text, nanti diparse ke number
+  // ✅ checklist kelengkapan
+  sim_card: boolean
+  sd_card: boolean
+  charger: boolean
+  box: boolean
+  phone_case: boolean
 }
 
 export default function InputServicePage() {
@@ -19,7 +25,12 @@ export default function InputServicePage() {
     no_hp: '',
     perangkat: '',
     keluhan: '',
-    estimasi: ''
+    estimasi: '',
+    sim_card: false,
+    sd_card: false,
+    charger: false,
+    box: false,
+    phone_case: false,
   })
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -31,9 +42,14 @@ export default function InputServicePage() {
   }, [])
 
   const onChange = useCallback(
-    (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm((prev) => ({ ...prev, [key]: e.target.value }))
-    },
+    (key: keyof FormState) =>
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value =
+          e.currentTarget.type === 'checkbox'
+            ? (e as React.ChangeEvent<HTMLInputElement>).target.checked
+            : e.currentTarget.value
+        setForm((prev) => ({ ...prev, [key]: value as any }))
+      },
     []
   )
 
@@ -69,7 +85,13 @@ export default function InputServicePage() {
         no_hp: form.no_hp.trim(),
         perangkat: form.perangkat.trim(),
         keluhan: form.keluhan.trim(),
-        estimasi: form.estimasi ? Number(form.estimasi) : null
+        estimasi: form.estimasi ? Number(form.estimasi) : null,
+        // ✅ simpan checklist
+        sim_card: form.sim_card,
+        sd_card: form.sd_card,
+        charger: form.charger,
+        box: form.box,
+        phone_case: form.phone_case,
         // status TIDAK dikirim → biar pakai default DB: 'checking'
       }
 
@@ -90,13 +112,50 @@ export default function InputServicePage() {
     }
   }
 
+  // 🔳 Komponen kecil untuk checkbox rapi (klik label = toggle)
+  function CheckItem({
+    label,
+    checked,
+    onChange,
+    id,
+  }: {
+    label: string
+    checked: boolean
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+    id: string
+  }) {
+    return (
+      <label
+        htmlFor={id}
+        className={`flex items-center gap-2 px-3 py-2 border rounded cursor-pointer select-none ${
+          checked ? 'bg-blue-50 border-blue-400' : 'bg-white'
+        }`}
+      >
+        <input
+          id={id}
+          type="checkbox"
+          className="h-4 w-4"
+          checked={checked}
+          onChange={onChange}
+        />
+        <span>{label}</span>
+      </label>
+    )
+  }
+
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-3">Input Servis Baru</h1>
 
       <div className="text-sm mb-4">
-        <div><span className="opacity-70">Nomor Nota:</span> <b>{nomorNota}</b></div>
-        <div><span className="opacity-70">Status awal:</span> <b className="text-yellow-700">checking</b></div>
+        <div>
+          <span className="opacity-70">Nomor Nota:</span>{' '}
+          <b>{nomorNota}</b>
+        </div>
+        <div>
+          <span className="opacity-70">Status awal:</span>{' '}
+          <b className="text-yellow-700">checking</b>
+        </div>
       </div>
 
       {errorMsg && (
@@ -162,10 +221,49 @@ export default function InputServicePage() {
           />
         </div>
 
+        {/* ✅ Kelengkapan (ceklist) */}
+        <div className="mt-2">
+          <div className="block text-sm mb-2 font-medium">Kelengkapan (cek yang diterima)</div>
+          <div className="grid grid-cols-2 gap-2">
+            <CheckItem
+              id="sim_card"
+              label="SIM Card"
+              checked={form.sim_card}
+              onChange={onChange('sim_card') as any}
+            />
+            <CheckItem
+              id="sd_card"
+              label="SD Card"
+              checked={form.sd_card}
+              onChange={onChange('sd_card') as any}
+            />
+            <CheckItem
+              id="charger"
+              label="Charger"
+              checked={form.charger}
+              onChange={onChange('charger') as any}
+            />
+            <CheckItem
+              id="box"
+              label="Box"
+              checked={form.box}
+              onChange={onChange('box') as any}
+            />
+            <CheckItem
+              id="phone_case"
+              label="Case"
+              checked={form.phone_case}
+              onChange={onChange('phone_case') as any}
+            />
+          </div>
+        </div>
+
         <button
           type="submit"
           disabled={submitting}
-          className={`bg-blue-600 text-white py-2 rounded font-medium ${submitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+          className={`bg-blue-600 text-white py-2 rounded font-medium ${
+            submitting ? 'opacity-60 cursor-not-allowed' : ''
+          }`}
         >
           {submitting ? 'Menyimpan…' : 'Simpan & Lihat Nota / Status'}
         </button>

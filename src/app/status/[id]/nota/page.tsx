@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Receipt58 from '@/components/Receipt58'
@@ -16,6 +16,12 @@ type Service = {
   status: string
   tanggal: string
   qris_url?: string | null
+  // ✅ kelengkapan
+  sim_card?: boolean
+  sd_card?: boolean
+  charger?: boolean
+  box?: boolean
+  phone_case?: boolean
 }
 
 export default function NotaPage({ params }: { params: { id: string } }) {
@@ -31,15 +37,11 @@ export default function NotaPage({ params }: { params: { id: string } }) {
         .select('*')
         .eq('id', params.id)
         .single<Service>()
-      if (error) {
-        setErr(error.message)
-      } else {
-        setOrder(data)
-      }
+      if (error) setErr(error.message)
+      else setOrder(data)
     })()
   }, [params.id])
 
-  // Auto print ketika data sudah ada jika query ?auto=1
   useEffect(() => {
     if (order && auto === '1') {
       const t = setTimeout(() => window.print(), 300)
@@ -63,6 +65,12 @@ export default function NotaPage({ params }: { params: { id: string } }) {
         tanggal={order.tanggal}
         orderId={order.id}
         qris_url={order.qris_url}
+        // ✅ pass kelengkapan
+        sim_card={order.sim_card}
+        sd_card={order.sd_card}
+        charger={order.charger}
+        box={order.box}
+        phone_case={order.phone_case}
       />
     </div>
   )

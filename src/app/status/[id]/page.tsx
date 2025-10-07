@@ -13,10 +13,16 @@ type Service = {
   no_hp: string
   perangkat: string
   keluhan: string
-  estimasi?: number
+  estimasi?: number | null
   status: ServiceStatus | string
   tanggal: string
-  qris_url?: string
+  qris_url?: string | null
+  // ✅ kelengkapan
+  sim_card?: boolean
+  sd_card?: boolean
+  charger?: boolean
+  box?: boolean
+  phone_case?: boolean
 }
 
 export default function StatusPage({ params }: { params: { id: string } }) {
@@ -37,7 +43,6 @@ export default function StatusPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     load()
-
     const sub = supabase
       .channel('service_orders-realtime')
       .on(
@@ -49,10 +54,7 @@ export default function StatusPage({ params }: { params: { id: string } }) {
         }
       )
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(sub)
-    }
+    return () => { supabase.removeChannel(sub) }
   }, [load, params.id])
 
   if (loading) return <div className="p-4">Memuat…</div>
@@ -66,10 +68,17 @@ export default function StatusPage({ params }: { params: { id: string } }) {
       repairing: 'bg-blue-100 text-blue-800',
       done: 'bg-emerald-100 text-emerald-800',
     }
-    return `inline-block px-2 py-1 rounded text-xs font-semibold ${
-      map[s] || 'bg-gray-100 text-gray-700'
-    }`
+    return `inline-block px-2 py-1 rounded text-xs font-semibold ${map[s] || 'bg-gray-100 text-gray-700'}`
   }
+
+  // ✅ list hanya yang tercentang
+  const kelengkapanList = [
+    data.sim_card ? 'SIM Card' : null,
+    data.sd_card ? 'SD Card' : null,
+    data.charger ? 'Charger' : null,
+    data.box ? 'Box' : null,
+    data.phone_case ? 'Case' : null,
+  ].filter(Boolean) as string[]
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://service-app.vercel.app'
 
@@ -79,39 +88,50 @@ export default function StatusPage({ params }: { params: { id: string } }) {
       <p><b>Nomor:</b> {data.nomor_nota}</p>
       <p><b>Nama:</b> {data.nama}</p>
       <p><b>Perangkat:</b> {data.perangkat}</p>
-      <p><b>Keluhan:</b> {data.keluhan}</p>
-      <p><b>Status:</b> <span className={badge(String(data.status))}>{String(data.status)}</span></p>
+      {kelengkapanList.length > 0 && (
+        <p className="mt-1">
+          <b>Kelengkapan:</b>{' '}
+          {kelengkapanList.map((item, i) => (
+            <span key={item} className="inline-block px-2 py-0.5 mr-1 mb-1 rounded bg-gray-100">
+              {item}{i < kelengkapanList.length - 1 ? '' : ''}
+            </span>
+          ))}
+        </p>
+      )}
+      <p className="mt-1"><b>Keluhan:</b> {data.keluhan}</p>
+      <p className="mt-1">
+        <b>Status:</b> <span className={badge(String(data.status))}>{String(data.status)}</span>
+      </p>
       <p><b>Tanggal:</b> {new Date(data.tanggal).toLocaleString('id-ID')}</p>
 
       <div className="mt-4 flex justify-center">
         <QRCode value={`${baseUrl}/status/${data.id}`} size={120} />
       </div>
 
-      // ...di dalam return(), mis. di bawah QRCode
-<div className="mt-4 flex gap-2 justify-center">
-  <a
-    href={`/status/${data.id}/nota`}
-    className="px-3 py-2 border rounded text-sm"
-    target="_blank"
-  >
-    Lihat Nota
-  </a>
-  <a
-    href={`/status/${data.id}/nota?auto=1`}
-    className="px-3 py-2 bg-black text-white rounded text-sm"
-    target="_blank"
-  >
-    Cetak Nota
-  </a>
-</div>
-
-
       {data.qris_url && (
         <div className="mt-3">
           <p className="text-center font-semibold">QRIS Pembayaran</p>
+          {/* boleh tetap <img>, atau ganti <Image /> jika ingin */}
           <img src={data.qris_url} alt="QRIS" className="mx-auto w-40 h-40" />
         </div>
       )}
+
+      <div className="mt-4 flex gap-2 justify-center">
+        <a
+          href={`/status/${data.id}/nota`}
+          className="px-3 py-2 border rounded text-sm"
+          target="_blank"
+        >
+          Lihat Nota
+        </a>
+        <a
+          href={`/status/${data.id}/nota?auto=1`}
+          className="px-3 py-2 bg-black text-white rounded text-sm"
+          target="_blank"
+        >
+          Cetak Nota
+        </a>
+      </div>
     </div>
   )
 }

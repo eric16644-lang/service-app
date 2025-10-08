@@ -6,62 +6,60 @@ import { supabase } from '@/lib/supabaseClient'
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
-  const [authorized, setAuthorized] = useState(false)
-
-  function log(...args: any[]) { console.log('[ADMIN]', ...args) }
+  const [allowed, setAllowed] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    let unsub: (() => void) | null = null
+    async function verify() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.replace('/login')
+        return
+      }
 
-    async function verify(userId: string) {
-      // profil harus bisa dibaca oleh user sendiri (cek RLS di bawah)
+      // (opsional) auto-upsert profile jika belum ada
+      await supabase.from('profiles').upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: false })
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', userId)
-        .single()
-      log('profile:', profile, error)
-      const ok = profile?.role === 'admin'
-      setAuthorized(ok)
-      setChecking(false)
-      if (!ok) router.replace('/login')
-    }
+        .eq('id', user.id)
+        .maybeSingle()
 
-    async function boot() {
-      const { data: { user } } = await supabase.auth.getUser()
-      log('getUser admin:', user)
+      if (error) {
+        setMessage('Gagal membaca profil. Coba refresh.')
+        setChecking(false)
+        return
+      }
 
-      if (user) {
-        await verify(user.id)
+      if (profile?.role === 'admin') {
+        setAllowed(true)
+        setChecking(false)
       } else {
-        const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-          log('auth event:', event, !!session?.user)
-          if (session?.user) verify(session.user.id)
-          else if (event === 'SIGNED_OUT') {
-            setChecking(false)
-            router.replace('/login')
-          }
-        })
-        unsub = () => sub.subscription.unsubscribe()
-
-        // timeout kalau memang tidak ada sesi
-        setTimeout(async () => {
-          const { data: { user: u2 } } = await supabase.auth.getUser()
-          log('timeout recheck:', u2)
-          if (!u2) {
-            setChecking(false)
-            router.replace('/login')
-          }
-        }, 900)
+        // ❗ Jangan redirect ke /login lagi—tampilkan pesan supaya tidak loop
+        setMessage('Akses ditolak. Akun ini bukan admin.')
+        setAllowed(false)
+        setChecking(false)
       }
     }
-
-    boot()
-    return () => { if (unsub) unsub() }
+    verify()
   }, [router])
 
   if (checking) return <div className="p-4">Memeriksa akses…</div>
-  if (!authorized) return null
+  if (!allowed) {
+    return (
+      <div className="p-6 max-w-md mx-auto text-center">
+        <h2 className="text-lg font-semibold mb-2">Tidak memiliki akses</h2>
+        <p className="text-sm text-gray-600 mb-4">{message || 'Hubungi pemilik untuk diberi akses admin.'}</p>
+        <button
+          onClick={async () => { await supabase.auth.signOut(); router.replace('/login') }}
+          className="bg-gray-800 text-white px-3 py-1 rounded text-sm"
+        >
+          Kembali ke Login
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div>

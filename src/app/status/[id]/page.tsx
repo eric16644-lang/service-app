@@ -18,7 +18,6 @@ type Service = {
   status_qr_url?: string | null
   tanggal: string
   qris_url?: string | null
-  // ✅ kelengkapan
   sim_card?: boolean
   sd_card?: boolean
   charger?: boolean
@@ -37,7 +36,6 @@ export default function StatusPage({ params }: { params: { id: string } }) {
       .select('*')
       .eq('id', params.id)
       .single<Service>()
-
     if (!error) setData(data)
     setLoading(false)
   }, [params.id])
@@ -72,7 +70,7 @@ export default function StatusPage({ params }: { params: { id: string } }) {
     return `inline-block px-2 py-1 rounded text-xs font-semibold ${map[s] || 'bg-gray-100 text-gray-700'}`
   }
 
-  // ✅ list hanya yang tercentang
+  // Tampilkan hanya kelengkapan yang dicentang
   const kelengkapanList = [
     data.sim_card ? 'SIM Card' : null,
     data.sd_card ? 'SD Card' : null,
@@ -86,58 +84,45 @@ export default function StatusPage({ params }: { params: { id: string } }) {
   return (
     <div className="max-w-sm mx-auto mt-6 p-4 border rounded-lg shadow text-sm">
       <h1 className="text-lg font-bold text-center mb-3">Status Servis</h1>
+
       <p><b>Nomor:</b> {data.nomor_nota}</p>
       <p><b>Nama:</b> {data.nama}</p>
       <p><b>Perangkat:</b> {data.perangkat}</p>
+
       {kelengkapanList.length > 0 && (
         <p className="mt-1">
           <b>Kelengkapan:</b>{' '}
-          {kelengkapanList.map((item, i) => (
+          {kelengkapanList.map((item) => (
             <span key={item} className="inline-block px-2 py-0.5 mr-1 mb-1 rounded bg-gray-100">
-              {item}{i < kelengkapanList.length - 1 ? '' : ''}
+              {item}
             </span>
           ))}
         </p>
       )}
+
       <p className="mt-1"><b>Keluhan:</b> {data.keluhan}</p>
       <p className="mt-1">
-        <b>Status:</b> <span className={badge(String(data.status))}>{String(data.status)}</span>
+        <b>Status:</b>{' '}
+        <span className={badge(String(data.status))}>
+          {String(data.status)}
+        </span>
       </p>
       <p><b>Tanggal:</b> {new Date(data.tanggal).toLocaleString('id-ID')}</p>
 
       <div className="mt-4 flex justify-center">
-  {data.status_qr_url ? (
-    <img src={data.status_qr_url} alt="QR Status" className="w-30 h-30" />
-  ) : (
-    <QRCode value={`${baseUrl}/status/${data.id}`} size={120} />
-  )}
-</div>
-
+        {data.status_qr_url ? (
+          <img src={data.status_qr_url} alt="QR Status" className="w-30 h-30" />
+        ) : (
+          <QRCode value={`${baseUrl}/status/${data.id}`} size={120} />
+        )}
+      </div>
 
       {data.qris_url && (
         <div className="mt-3">
           <p className="text-center font-semibold">QRIS Pembayaran</p>
-          {/* boleh tetap <img>, atau ganti <Image /> jika ingin */}
           <img src={data.qris_url} alt="QRIS" className="mx-auto w-40 h-40" />
         </div>
       )}
-
-      <div className="mt-4 flex gap-2 justify-center">
-        <a
-          href={`/status/${data.id}/nota`}
-          className="px-3 py-2 border rounded text-sm"
-          target="_blank"
-        >
-          Lihat Nota
-        </a>
-        <a
-          href={`/status/${data.id}/nota?auto=1`}
-          className="px-3 py-2 bg-black text-white rounded text-sm"
-          target="_blank"
-        >
-          Cetak Nota
-        </a>
-      </div>
     </div>
   )
 }

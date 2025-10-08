@@ -130,6 +130,22 @@ export default function AdminPage() {
           </svg>
           Input Servis
         </Link>
+        <Link
+          href="/garansi"
+          className="
+            inline-flex items-center gap-2 rounded-lg
+            bg-blue-600 text-white px-3 py-2 text-sm font-medium
+            hover:bg-blue-700 active:bg-blue-800
+            dark:bg-blue-500 dark:hover:bg-blue-600 dark:active:bg-blue-700
+            shadow-sm
+          "
+          title="Pengambilan Service"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/>
+          </svg>
+          Garansi
+        </Link>
       </div>
 
       {/* Table */}

@@ -99,33 +99,55 @@ export default function AdminPage() {
   const statusOptions = ['checking', 'waiting', 'cancel', 'repairing', 'done']
   const badge = (s: string) => {
     const map: Record<string, string> = {
-      checking: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200',
-      waiting: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
-      cancel: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200',
+      checking: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200',
+      waiting: 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+      cancel: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
       repairing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
       done: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
     }
-    return `inline-block px-2 py-1 rounded text-xs font-semibold ${map[s] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'}`
+    return `inline-block px-2 py-0.5 rounded text-xs font-semibold ${map[s] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'}`
   }
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
-      <h1 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Dashboard Servis</h1>
+      {/* Header / Toolbar */}
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Dashboard Servis</h1>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+        <Link
+          href="/input"
+          className="
+            inline-flex items-center gap-2 rounded-lg
+            bg-blue-600 text-white px-3 py-2 text-sm font-medium
+            hover:bg-blue-700 active:bg-blue-800
+            dark:bg-blue-500 dark:hover:bg-blue-600 dark:active:bg-blue-700
+            shadow-sm
+          "
+          title="Tambah order servis baru"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/>
+          </svg>
+          Input Servis
+        </Link>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-950">
         <table className="w-full text-sm text-gray-800 dark:text-gray-100">
-          <thead className="bg-gray-100 dark:bg-neutral-900/70 text-gray-800 dark:text-gray-200">
+          <thead className="bg-gray-100 dark:bg-neutral-900/70 text-gray-800 dark:text-gray-200 sticky top-0 z-10">
             <tr>
-              <th className="p-2">Nota</th>
-              <th className="p-2">Nama</th>
-              <th className="p-2">Perangkat</th>
-              <th className="p-2">Kelengkapan</th>
-              <th className="p-2">Status</th>
-              <th className="p-2">QR</th>
-              <th className="p-2">Menu</th> {/* <- Menu aksi termasuk Nota */}
-              <th className="p-2">Ubah Status</th>
+              <th className="p-2 text-left">Nota</th>
+              <th className="p-2 text-left">Nama</th>
+              <th className="p-2 text-left">Perangkat</th>
+              <th className="p-2 text-left">Kelengkapan</th>
+              <th className="p-2 text-left">Status</th>
+              <th className="p-2 text-left">QR</th>
+              <th className="p-2 text-left">Menu</th>
+              <th className="p-2 text-left">Ubah Status</th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {data.length === 0 && (
               <tr>
@@ -135,7 +157,7 @@ export default function AdminPage() {
               </tr>
             )}
 
-            {data.map((item) => {
+            {data.map((item, idx) => {
               const kelengkapan = [
                 item.sim_card ? 'SIM' : null,
                 item.sd_card ? 'SD' : null,
@@ -148,8 +170,15 @@ export default function AdminPage() {
               const loading = !!qrLoading[item.id]
 
               return (
-                <tr key={item.id} className="bg-white dark:bg-neutral-950">
-                  <td className="p-2">{item.nomor_nota}</td>
+                <tr
+                  key={item.id}
+                  className={`
+                    transition-colors
+                    ${idx % 2 ? 'bg-gray-50/60 dark:bg-neutral-900/40' : 'bg-white dark:bg-neutral-950'}
+                    hover:bg-gray-50 dark:hover:bg-neutral-900
+                  `}
+                >
+                  <td className="p-2 whitespace-nowrap">{item.nomor_nota}</td>
                   <td className="p-2">{item.nama}</td>
                   <td className="p-2">{item.perangkat}</td>
                   <td className="p-2 text-xs">{kelengkapan || '-'}</td>
@@ -173,9 +202,11 @@ export default function AdminPage() {
                       <button
                         onClick={() => generateQR(item.id)}
                         disabled={loading}
-                        className={`px-2 py-1 border rounded dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-900 ${
-                          loading ? 'opacity-60 cursor-not-allowed' : ''
-                        }`}
+                        className={`px-2 py-1 border rounded
+                            border-gray-300 dark:border-gray-700
+                            bg-white dark:bg-neutral-950
+                            hover:bg-gray-50 dark:hover:bg-neutral-900
+                            ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                         title="Generate QR untuk tracking"
                       >
                         {loading ? 'Membuat…' : 'Generate QR'}
@@ -189,7 +220,8 @@ export default function AdminPage() {
                       <Link
                         href={`/status/${item.id}/nota`}
                         target="_blank"
-                        className="px-2 py-1 rounded border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-900"
+                        className="px-2 py-1 rounded border border-gray-300 dark:border-gray-700
+                                   bg-white dark:bg-neutral-950 hover:bg-gray-50 dark:hover:bg-neutral-900"
                         title="Buka Nota (print)"
                       >
                         Nota
@@ -197,7 +229,8 @@ export default function AdminPage() {
                       <Link
                         href={`/status/${item.id}`}
                         target="_blank"
-                        className="px-2 py-1 rounded border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-900"
+                        className="px-2 py-1 rounded border border-gray-300 dark:border-gray-700
+                                   bg-white dark:bg-neutral-950 hover:bg-gray-50 dark:hover:bg-neutral-900"
                         title="Halaman status publik"
                       >
                         Lacak
@@ -210,7 +243,8 @@ export default function AdminPage() {
                     <select
                       value={item.status}
                       onChange={(e) => updateStatus(item.id, e.target.value)}
-                      className="border dark:border-gray-700 bg-white dark:bg-neutral-950 p-1 rounded"
+                      className="border border-gray-300 dark:border-gray-700
+                                 bg-white dark:bg-neutral-950 p-1 rounded"
                     >
                       {statusOptions.map((s) => (
                         <option key={s} value={s}>

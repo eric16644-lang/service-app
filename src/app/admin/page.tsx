@@ -14,6 +14,7 @@ type Service = {
   status: string
   tanggal: string
   qris_url?: string | null
+  status_qr_url?: string | null   // ⬅️ QR status (public URL) kalau sudah dibuat
   sim_card?: boolean
   sd_card?: boolean
   charger?: boolean
@@ -23,6 +24,7 @@ type Service = {
 
 export default function AdminPage() {
   const [data, setData] = useState<Service[]>([])
+  const [qrLoading, setQrLoading] = useState<Record<string, boolean>>({}) // per-row loader
 
   // 🔄 ambil data awal
   async function loadData() {
@@ -68,6 +70,27 @@ export default function AdminPage() {
     })
   }
 
+  // 🧩 Generate QR untuk row lama yang belum punya
+  async function generateQR(id: string) {
+    try {
+      setQrLoading((prev) => ({ ...prev, [id]: true }))
+      const res = await fetch('/api/qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        console.error('QR failed:', json?.error || res.statusText)
+        return
+      }
+      // refresh list agar status_qr_url terisi
+      await loadData()
+    } finally {
+      setQrLoading((prev) => ({ ...prev, [id]: false }))
+    }
+  }
+
   useEffect(() => {
     loadData()
     // 🔔 realtime update
@@ -97,7 +120,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
+    <div className="p-4 max-w-6xl mx-auto">
       <h1 className="text-xl font-bold mb-4">Dashboard Servis</h1>
       <table className="w-full border text-sm">
         <thead>
@@ -107,6 +130,7 @@ export default function AdminPage() {
             <th className="p-2">Perangkat</th>
             <th className="p-2">Kelengkapan</th>
             <th className="p-2">Status</th>
+            <th className="p-2">QR</th>    {/* ⬅️ kolom QR */}
             <th className="p-2">Aksi</th>
           </tr>
         </thead>
@@ -122,8 +146,10 @@ export default function AdminPage() {
               .filter(Boolean)
               .join(', ')
 
+            const loading = !!qrLoading[item.id]
+
             return (
-              <tr key={item.id} className="border-t">
+              <tr key={item.id} className="border-t align-top">
                 <td className="p-2">{item.nomor_nota}</td>
                 <td className="p-2">{item.nama}</td>
                 <td className="p-2">{item.perangkat}</td>
@@ -131,6 +157,31 @@ export default function AdminPage() {
                 <td className="p-2">
                   <span className={badge(item.status)}>{item.status}</span>
                 </td>
+
+                {/* ⬇️ Kolom QR */}
+                <td className="p-2">
+                  {item.status_qr_url ? (
+                    <a
+                      href={item.status_qr_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline text-blue-600"
+                      title="Lihat QR"
+                    >
+                      Lihat
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => generateQR(item.id)}
+                      disabled={loading}
+                      className={`px-2 py-1 border rounded ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      title="Generate QR untuk tracking"
+                    >
+                      {loading ? 'Membuat…' : 'Generate QR'}
+                    </button>
+                  )}
+                </td>
+
                 <td className="p-2">
                   <select
                     value={item.status}

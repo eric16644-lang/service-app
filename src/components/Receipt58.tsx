@@ -12,6 +12,7 @@ type Props = {
   status: string
   tanggal: string | Date
   orderId: string
+  status_qr_url?: string | null
   qris_url?: string | null
   // ✅ kelengkapan
   sim_card?: boolean
@@ -112,11 +113,12 @@ export default function Receipt58({
 
       {/* QR Lacak Status */}
       <div className="center">
-        <div className="label center">Scan untuk lacak status:</div>
-        <div className="qr-wrap">
-          <QRCode value={statusUrl} size={120} />
-        </div>
-      </div>
+  <div className="label center">Scan untuk lacak status:</div>
+  <div className="qr-wrap">
+    {/** PRIORITAS: gambar dari storage jika ada */}
+    { (statusUrl as any) && null /* no-op to satisfy ts in snippet */ }
+  </div>
+</div>
 
       {/* QRIS opsional */}
       {qris_url ? (

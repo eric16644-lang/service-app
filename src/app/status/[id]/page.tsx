@@ -15,6 +15,7 @@ type Service = {
   keluhan: string
   estimasi?: number | null
   status: ServiceStatus | string
+  status_qr_url?: string | null
   tanggal: string
   qris_url?: string | null
   // ✅ kelengkapan
@@ -105,8 +106,13 @@ export default function StatusPage({ params }: { params: { id: string } }) {
       <p><b>Tanggal:</b> {new Date(data.tanggal).toLocaleString('id-ID')}</p>
 
       <div className="mt-4 flex justify-center">
-        <QRCode value={`${baseUrl}/status/${data.id}`} size={120} />
-      </div>
+  {data.status_qr_url ? (
+    <img src={data.status_qr_url} alt="QR Status" className="w-30 h-30" />
+  ) : (
+    <QRCode value={`${baseUrl}/status/${data.id}`} size={120} />
+  )}
+</div>
+
 
       {data.qris_url && (
         <div className="mt-3">

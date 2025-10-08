@@ -102,6 +102,12 @@ export default function InputServicePage() {
         .single()
 
       if (error) throw error
+      // 🔄 generate QR async (tidak perlu tunggu)
+fetch('/api/qr', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ id: data.id }),
+}).catch(() => {})
       // redirect ke halaman status untuk dicetak / dibagikan
       router.push(`/status/${data.id}`)
     } catch (err: unknown) {
